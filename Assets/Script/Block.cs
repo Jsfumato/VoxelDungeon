@@ -14,7 +14,7 @@ public enum BLOCK_TYPE
     ATTACHABLE = 255
 }
 
-public class Block
+public class Block : Object
 {
     public Block(BLOCK_TYPE type)
     {

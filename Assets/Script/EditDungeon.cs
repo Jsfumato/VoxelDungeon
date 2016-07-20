@@ -1,11 +1,11 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
+using UnityEditor;
 
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-
 
 public class EditDungeon : MonoBehaviour
 {
@@ -45,12 +45,15 @@ public class EditDungeon : MonoBehaviour
     public Button blockButton = null;
     public Button saveButton = null;
     public GameObject PopUpMenu = null;
-    public GameObject Panel = null;
+    public GameObject Canvas = null;
+    public GameObject BlockList = null;
 
     private Object[] prefabs;
 
     private GameObject selectdBlock = null;
+    private GameObject emptyColliders = null;
     public GameObject testBlock = null;
+    public GameObject ButtonPrefab = null;
 
     void Awake()
     {
@@ -60,12 +63,16 @@ public class EditDungeon : MonoBehaviour
 
         indicator = Instantiate(indicator) as GameObject;
         PopUpMenu = Instantiate(PopUpMenu) as GameObject;
+        emptyColliders = new GameObject();
+        emptyColliders.name = "EmptyColliders";
 
         // need "resources" folder
         // Loads list of prefabs in "Resources/Prefab" path
         prefabs = Resources.LoadAll("Prefab", typeof(GameObject));
-        //SetBlockList(prefabs, Panel);
-        SetPopupGUI(prefabs, Panel);
+
+        SetBlockList(prefabs, BlockList);
+
+        SetPopupGUI(prefabs, Canvas);
 
         SetBaseBlock(prefabs);
 
@@ -118,8 +125,6 @@ public class EditDungeon : MonoBehaviour
     void TouchByOne()
     {
         Vector3 selectedPos = SelectBlock(Input.GetTouch(0).position);
-        //Debug.Log(selectedPos);
-        //GetHeightOfPosition(selectedPos);
 
         prevState = STATE.ONE;
         return;
@@ -164,6 +169,14 @@ public class EditDungeon : MonoBehaviour
     void SaveEditData()
     {
         Debug.Log("Save Data!");
+        string result = "";
+        for (int i = 0; i < worldBlockInfo.Length; ++i)
+        {
+            //Debug.Log(EditorJsonUtility.ToJson(worldBlockInfo[i]));
+            result += EditorJsonUtility.ToJson(worldBlockInfo[i]);
+        }
+
+        Debug.Log(result);
     }
 
     void SetPopupGUI(Object[] prefabList, GameObject panel)
@@ -181,20 +194,41 @@ public class EditDungeon : MonoBehaviour
 
     void SetBlockList(Object[] prefabList, GameObject panel)
     {
+        int position = 0;
         // test code
         foreach(GameObject prefab in prefabList)
         {
             // Block Layer == 10
-            if (prefab.layer == 10)
-                AppendBlockToList(prefab, panel);
+            if (prefab.layer != 10)
+                continue;
+
+            if (prefab.name == "Empty")
+                continue;
+
+            AppendBlockToList(prefab, panel, position++);
         }
     }
 
-    void AppendBlockToList(GameObject blockPrefab, GameObject panel)
+    void AppendBlockToList(GameObject blockPrefab, GameObject blockList, int position)
     {
-        Debug.Log("Append Block Prefab" + blockPrefab.name);
+        Debug.Log("Append Block Prefab : " + blockPrefab.name);
 
-        selectdBlock = (GameObject)Instantiate(blockPrefab);
+        GameObject btn = Instantiate(ButtonPrefab) as GameObject;
+        btn.GetComponent<RectTransform>().anchorMin = new Vector2(0.0f, 0.9f - (float)(position) / 10);
+        btn.GetComponent<RectTransform>().anchorMax = new Vector2(1.0f, 1.0f - (float)(position) / 10);
+        
+        btn.transform.SetParent(blockList.transform, false);
+        btn.GetComponentInChildren<Text>().text = blockPrefab.name;
+
+        btn.GetComponent<Button>().onClick.AddListener(() =>
+        {
+            Debug.Log("Block : " + blockPrefab.name);
+            selectdBlock = blockPrefab;
+        });
+
+        //prefabName
+
+        //GameObject obj = (GameObject)Instantiate(blockPrefab);
 
         //obj.GetComponent<RectTransform>().SetParent(panel.transform, false);
         //obj.SetActive(true);
@@ -241,9 +275,10 @@ public class EditDungeon : MonoBehaviour
                 GameObject empty = Instantiate(emptyColli) as GameObject;
                 empty.name = "test";
                 empty.transform.position = pos;
+                empty.transform.parent = emptyColliders.transform;
 
                 //Block testBlock = new Block(BLOCK_TYPE.ATTACHABLE);
-                worldBlockInfo[index] = new Block(BLOCK_TYPE.ATTACHABLE);
+                i[index] = new Block(BLOCK_TYPE.ATTACHABLE);
             }
         }
         return;
@@ -290,7 +325,7 @@ public class EditDungeon : MonoBehaviour
 
     void SetBlock(Vector3 selectedPos, BLOCK_TYPE bType)
     {
-        GameObject block = Instantiate(testBlock) as GameObject;
+        GameObject block = Instantiate(selectdBlock) as GameObject;
         block.transform.position = selectedPos;
 
         int posX = (int)selectedPos.x;
@@ -324,26 +359,16 @@ public class EditDungeon : MonoBehaviour
 
         if ((worldBlockInfo[index] == null) || (worldBlockInfo[index].bType == BLOCK_TYPE.NONE))
         {
-            Debug.LogWarning("ATTACHABLE (" + offset.x + x +", " + offset.y + y +", " + offset.z + z+")");
+            //Debug.LogWarning("ATTACHABLE (" + offset.x + x +", " + offset.y + y +", " + offset.z + z+")");
             worldBlockInfo[index] = new Block(BLOCK_TYPE.ATTACHABLE);
 
             Vector3 pos = new Vector3(posX + x, posY + y, posZ + z);
             GameObject empty = Instantiate(emptyColli) as GameObject;
             empty.transform.position = pos;
+            empty.transform.parent = emptyColliders.transform;
         }
     }
-
-    //void RefreshAttachable()
-    //{
-    //    for (int i = 0; i < MAX_WORLD_SIZE * MAX_WORLD_SIZE * MAX_WORLD_SIZE; ++i)
-    //    {
-    //        if (worldBlockInfo[i].bType == BLOCK_TYPE.NONE)
-    //            continue;
-    //        if (worldBlockInfo[i].bType == BLOCK_TYPE.ATTACHABLE)
-    //            continue;
-    //    }
-    //}
-
+    
     ///////////////////////////////////////////////////////////////////////
     //                      Camera Action Methods                        //
     ///////////////////////////////////////////////////////////////////////
