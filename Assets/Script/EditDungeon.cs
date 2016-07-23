@@ -6,6 +6,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 
+using SimpleJSON;
+
 public class EditDungeon : MonoBehaviour
 {
     const int MAX_WORLD_SIZE = 32;
@@ -168,8 +170,22 @@ public class EditDungeon : MonoBehaviour
 
     void SaveEditData()
     {
+        if (updateBlockInfo.Count != 0)
+            return;
+
         Debug.Log("Save Data!");
 
+        JSONNode node = new JSONArray();
+        for (int i = 0; i < sparseBlockInfo.Count; i++)
+            node.Add(sparseBlockInfo[i].SaveToJSON());
+
+        Debug.Log(node);
+
+        //Application.CaptureScreenshot(System.DateTime.Now + ".png")
+        string filePath = Application.persistentDataPath + "/" + System.DateTime.Now + ".json";
+        File.WriteAllText(filePath, node);
+
+        Debug.Log(Application.persistentDataPath);
     }
 
     void SetPopupGUI(Object[] prefabList, GameObject panel)

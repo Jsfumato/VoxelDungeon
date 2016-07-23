@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using SimpleJSON;
 
 public class BlockInfo
 {
@@ -15,5 +16,16 @@ public class BlockInfo
         this.posY = posY;
         this.posZ = posZ;
         this.type = type;
+    }
+
+    public JSONNode SaveToJSON()
+    {
+        JSONNode node = new JSONClass();
+        node["posX"] = posX.ToString();
+        node["posY"] = posY.ToString();
+        node["posZ"] = posZ.ToString();
+        node["type"] = type.ToString();
+        node["rotation"] = rotation.ToString();
+        return node;
     }
 }
