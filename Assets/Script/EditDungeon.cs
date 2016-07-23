@@ -1,7 +1,6 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
-using UnityEditor;
 
 using System.Collections;
 using System.Collections.Generic;
@@ -35,7 +34,13 @@ public class EditDungeon : MonoBehaviour
     private Vector2 prevTouchPos0;
     private Vector2 prevTouchPos1;
     private bool isMoving = false;
+
+    private List<BlockInfo> sparseBlockInfo = new List<BlockInfo>();
+    private Stack<BlockInfo> updateBlockInfo = new Stack<BlockInfo>();
+    private Dictionary<BLOCK_TYPE, GameObject> blockPrefabDic = new Dictionary<BLOCK_TYPE, GameObject>();
+
     private Block[] worldBlockInfo = new Block[MAX_WORLD_SIZE * MAX_WORLD_SIZE * MAX_WORLD_SIZE];
+
     private Vector3 prevSelectedPos = new Vector3();
 
     public Camera playerCamera = null;
@@ -76,14 +81,6 @@ public class EditDungeon : MonoBehaviour
 
         SetBaseBlock(prefabs);
 
-        //3rd dimension array
-        //worldBlockInfo = new Block[MAX_WORLD_SIZE * MAX_WORLD_SIZE * MAX_WORLD_SIZE];
-
-        //for (int i = 0; i < MAX_WORLD_SIZE * MAX_WORLD_SIZE * MAX_WORLD_SIZE; ++i)
-        //{
-        //    worldBlockInfo[i] = new Block(BLOCK_TYPE.NONE);
-        //}
-
         saveButton.onClick.AddListener(SaveEditData);
         blockButton.onClick.AddListener(() => SelectMenu(blockButton));
 
@@ -95,6 +92,9 @@ public class EditDungeon : MonoBehaviour
     void Update ()
     {
         DoTouchAction(Input.touchCount);
+
+        // update block info
+        UpdateRender();
     }
 
     void DoTouchAction(int touchCount)
@@ -169,14 +169,7 @@ public class EditDungeon : MonoBehaviour
     void SaveEditData()
     {
         Debug.Log("Save Data!");
-        string result = "";
-        for (int i = 0; i < worldBlockInfo.Length; ++i)
-        {
-            //Debug.Log(EditorJsonUtility.ToJson(worldBlockInfo[i]));
-            result += EditorJsonUtility.ToJson(worldBlockInfo[i]);
-        }
 
-        Debug.Log(result);
     }
 
     void SetPopupGUI(Object[] prefabList, GameObject panel)
@@ -211,6 +204,12 @@ public class EditDungeon : MonoBehaviour
 
     void AppendBlockToList(GameObject blockPrefab, GameObject blockList, int position)
     {
+        Debug.LogWarning("Append blockPrefabDic : " + blockPrefab.name);
+        // Add to Dictionary
+        BLOCK_TYPE bType = blockPrefab.GetComponent<Block>().bType;
+        blockPrefabDic.Add(bType, blockPrefab);
+
+        // GUI
         Debug.Log("Append Block Prefab : " + blockPrefab.name);
 
         GameObject btn = Instantiate(ButtonPrefab) as GameObject;
@@ -225,18 +224,27 @@ public class EditDungeon : MonoBehaviour
             Debug.Log("Block : " + blockPrefab.name);
             selectdBlock = blockPrefab;
         });
-
-        //prefabName
-
-        //GameObject obj = (GameObject)Instantiate(blockPrefab);
-
-        //obj.GetComponent<RectTransform>().SetParent(panel.transform, false);
-        //obj.SetActive(true);
     }
 
     ///////////////////////////////////////////////////////////////////////
     //                       Edit Action Methods                         //
     ///////////////////////////////////////////////////////////////////////
+
+    void UpdateRender()
+    {
+        while (updateBlockInfo.Count != 0)
+        {
+            BlockInfo block = updateBlockInfo.Pop();
+            Vector3 position = new Vector3(block.posX, block.posY, block.posZ);
+
+            GameObject typePrefab = blockPrefabDic[block.type];
+            GameObject instPrefab = Instantiate(typePrefab) as GameObject;
+
+            instPrefab.AddComponent<BoxCollider>();
+            instPrefab.transform.rotation = Quaternion.Euler(new Vector3(0.0f, block.rotation, 0.0f));
+            instPrefab.transform.position = position;
+        }
+    }
 
     void SetBaseBlock(Object[] prefabs)
     {
@@ -245,42 +253,31 @@ public class EditDungeon : MonoBehaviour
             if (prefab.name != "block_base")
                 continue;
 
-            GameObject obj = new GameObject("Plane");
-            //obj.AddComponent<Transform>();
-            obj.transform.position = new Vector3(0, -1, 0);
             for (int i = 0; i < MAX_WORLD_SIZE; ++i)
             {
                 for (int j = 0; j < MAX_WORLD_SIZE; ++j)
                 {
-                    selectdBlock = (GameObject)Instantiate(prefab);
-
-                    Vector3 position = new Vector3();
-                    position.x = (float)i;
-                    position.y = (float)-1;
-                    position.z = (float)j;
-                    selectdBlock.transform.position = position;
-                    selectdBlock.transform.parent = obj.transform;
+                    sparseBlockInfo.Add(new BlockInfo(i, 0, j, BLOCK_TYPE.BASE));
+                    updateBlockInfo.Push(new BlockInfo(i, 0, j, BLOCK_TYPE.BASE));
                 }
             }
-
-            selectdBlock = null;
         }
 
-        for (int posX = 0; posX < MAX_WORLD_SIZE; ++posX)
-        {
-            for(int posZ = 0; posZ < MAX_WORLD_SIZE; ++posZ)
-            {
-                int index = posX * MAX_WORLD_SIZE * MAX_WORLD_SIZE + posZ * MAX_WORLD_SIZE;
-                Vector3 pos = new Vector3(posX, 0, posZ);
-                GameObject empty = Instantiate(emptyColli) as GameObject;
-                empty.name = "test";
-                empty.transform.position = pos;
-                empty.transform.parent = emptyColliders.transform;
+        //for (int posX = 0; posX < MAX_WORLD_SIZE; ++posX)
+        //{
+        //    for(int posZ = 0; posZ < MAX_WORLD_SIZE; ++posZ)
+        //    {
+        //        int index = posX * MAX_WORLD_SIZE * MAX_WORLD_SIZE + posZ * MAX_WORLD_SIZE;
+        //        Vector3 pos = new Vector3(posX, 0, posZ);
+        //        GameObject empty = Instantiate(emptyColli) as GameObject;
+        //        empty.name = "test";
+        //        empty.transform.position = pos;
+        //        empty.transform.parent = emptyColliders.transform;
 
-                //Block testBlock = new Block(BLOCK_TYPE.ATTACHABLE);
-                i[index] = new Block(BLOCK_TYPE.ATTACHABLE);
-            }
-        }
+        //        //Block testBlock = new Block(BLOCK_TYPE.ATTACHABLE);
+        //        worldBlockInfo[index] = new Block(BLOCK_TYPE.ATTACHABLE);
+        //    }
+        //}
         return;
     }
 
@@ -315,6 +312,40 @@ public class EditDungeon : MonoBehaviour
         Vector3 pos = hits[0].transform.position;
         //pos.y += 1.0f;
 
+        Vector3 normal = hits[0].normal;
+        normal = hits[0].transform.TransformDirection(normal);
+
+        if(normal == hits[0].transform.up)
+        {
+            Debug.Log(normal == hits[0].transform.up);
+            pos = new Vector3(pos.x, pos.y + 1, pos.z);
+        }
+        if (normal == -hits[0].transform.up)
+        {
+            Debug.Log(normal == -hits[0].transform.up);
+            pos = new Vector3(pos.x, pos.y - 1, pos.z);
+        }
+        if (normal == hits[0].transform.forward)
+        {
+            Debug.Log(normal == hits[0].transform.forward);
+            pos = new Vector3(pos.x, pos.y, pos.z+1);
+        }
+        if (normal == -hits[0].transform.forward)
+        {
+            Debug.Log(normal == -hits[0].transform.forward);
+            pos = new Vector3(pos.x, pos.y, pos.z-1);
+        }
+        if (normal == hits[0].transform.right)
+        {
+            Debug.Log(normal == hits[0].transform.right);
+            pos = new Vector3(pos.x+1, pos.y, pos.z);
+        }
+        if (normal == -hits[0].transform.right)
+        {
+            Debug.Log(normal == -hits[0].transform.right);
+            pos = new Vector3(pos.x-1, pos.y, pos.z);
+        }
+
         prevSelectedPos = pos;
         indicator.transform.position = pos;
         indicator.transform.rotation = Quaternion.identity;
@@ -332,15 +363,16 @@ public class EditDungeon : MonoBehaviour
         int posZ = (int)selectedPos.z;
         int index = posX * MAX_WORLD_SIZE * MAX_WORLD_SIZE + posZ * MAX_WORLD_SIZE + (int)selectedPos.y;
 
-        Block blockInfo = new Block(bType);
-        worldBlockInfo[index] = blockInfo;
+        // TODO:
+        //Block blockInfo = new Block(bType);
+        //worldBlockInfo[index] = blockInfo;
 
         // Check Attachable
-        CheckAttachable(0, 1, 0, selectedPos);
-        CheckAttachable(1, 0, 0, selectedPos);
-        CheckAttachable(-1,0, 0, selectedPos);
-        CheckAttachable(0, 0, 1, selectedPos);
-        CheckAttachable(0, 0,-1, selectedPos);
+        //CheckAttachable(0, 1, 0, selectedPos);
+        //CheckAttachable(1, 0, 0, selectedPos);
+        //CheckAttachable(-1,0, 0, selectedPos);
+        //CheckAttachable(0, 0, 1, selectedPos);
+        //CheckAttachable(0, 0,-1, selectedPos);
     }
 
     void CheckAttachable(int x, int y, int z, Vector3 offset)
@@ -360,7 +392,8 @@ public class EditDungeon : MonoBehaviour
         if ((worldBlockInfo[index] == null) || (worldBlockInfo[index].bType == BLOCK_TYPE.NONE))
         {
             //Debug.LogWarning("ATTACHABLE (" + offset.x + x +", " + offset.y + y +", " + offset.z + z+")");
-            worldBlockInfo[index] = new Block(BLOCK_TYPE.ATTACHABLE);
+            // TODO:
+            //worldBlockInfo[index] = new Block(BLOCK_TYPE.ATTACHABLE);
 
             Vector3 pos = new Vector3(posX + x, posY + y, posZ + z);
             GameObject empty = Instantiate(emptyColli) as GameObject;

@@ -6,37 +6,28 @@ public enum BLOCK_TYPE
     NONE = 0,
     BASE = 1,
     INDICATOR = 2,
+    STONE = 3,
 
     /* deco */
     SKULL = 200,
+    PILLAR_BOTTOM = 201,
+    PILLAR = 202,
+    PILLAR_TOP = 203,
 
     /* base block */
     ATTACHABLE = 255
 }
 
-public class Block : Object
+public class Block : MonoBehaviour
 {
-    public Block(BLOCK_TYPE type)
-    {
-        //this.prefab = prefab;
-        this.bType = type;
-
-        if (type == BLOCK_TYPE.BASE)
-            isBreakable = false;
-    }
-
-    public void SetInfo(BLOCK_TYPE type)
-    {
-        //this.prefab = prefab;
-        this.bType = type;
-
-        if (type == BLOCK_TYPE.BASE)
-            isBreakable = false;
-    }
-
-    private bool isBreakable = true;
-    //private GameObject prefab = null;
+    public bool isBreakable = true;
     public BLOCK_TYPE bType = BLOCK_TYPE.NONE;
-    Vector2 lookVector = Vector2.zero;
-    private GameObject block;
+    public float rotationY = 0.0f;
+
+    public bool attachable_top = true;
+    public bool attachable_bottom = true;
+    public bool attachable_front = true;
+    public bool attachable_back = true;
+    public bool attachable_right = true;
+    public bool attachable_left = true;
 }
