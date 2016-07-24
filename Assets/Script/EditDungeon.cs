@@ -134,25 +134,25 @@ public class EditDungeon : MonoBehaviour
 
     void TouchByTwo()
     {
-        if (prevState != STATE.TWO)
-        {
-            prevDistance = Vector2.Distance(Input.GetTouch(0).position, Input.GetTouch(1).position);
-            prevState = STATE.TWO;
-            return;
-        }
+        //if (prevState != STATE.TWO)
+        //{
+        //    prevDistance = Vector2.Distance(Input.GetTouch(0).position, Input.GetTouch(1).position);
+        //    prevState = STATE.TWO;
+        //    return;
+        //}
 
-        if (prevState == STATE.TWO)
-        {
-            float curDistance = Vector2.Distance(Input.GetTouch(0).position, Input.GetTouch(1).position);
+        //if (prevState == STATE.TWO)
+        //{
+        //    float curDistance = Vector2.Distance(Input.GetTouch(0).position, Input.GetTouch(1).position);
 
-            DoCameraControl(Input.GetTouch(0).position, Input.GetTouch(1).position);
+        //    DoCameraControl(Input.GetTouch(0).position, Input.GetTouch(1).position);
 
-            prevDistance = curDistance;
-            prevTouchPos0 = Input.GetTouch(0).position;
-            prevTouchPos1 = Input.GetTouch(1).position;
-            prevState = STATE.TWO;
-            return;
-        }
+        //    prevDistance = curDistance;
+        //    prevTouchPos0 = Input.GetTouch(0).position;
+        //    prevTouchPos1 = Input.GetTouch(1).position;
+        //    prevState = STATE.TWO;
+        //    return;
+        //}
     }
     ///////////////////////////////////////////////////////////////////////
     //                        UI Action Methods                          //
