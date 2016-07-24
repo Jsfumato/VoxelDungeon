@@ -182,10 +182,11 @@ public class EditDungeon : MonoBehaviour
         Debug.Log(node);
 
         //Application.CaptureScreenshot(System.DateTime.Now + ".png")
-        string filePath = Application.persistentDataPath + "/" + System.DateTime.Now + ".json";
-        File.WriteAllText(filePath, node);
+        //        string filePath = Application.persistentDataPath + "/" + System.DateTime.Now + ".json";
+        string filePath = Application.persistentDataPath + "/result.json";
+        File.WriteAllText(filePath, node.ToString());
 
-        Debug.Log(Application.persistentDataPath);
+        Debug.Log(filePath);
     }
 
     void SetPopupGUI(Object[] prefabList, GameObject panel)
@@ -273,27 +274,11 @@ public class EditDungeon : MonoBehaviour
             {
                 for (int j = 0; j < MAX_WORLD_SIZE; ++j)
                 {
-                    sparseBlockInfo.Add(new BlockInfo(i, 0, j, BLOCK_TYPE.BASE));
-                    updateBlockInfo.Push(new BlockInfo(i, 0, j, BLOCK_TYPE.BASE));
+                    sparseBlockInfo.Add(new BlockInfo(i, 0, j, BLOCK_TYPE.BASE, 0.0f));
+                    updateBlockInfo.Push(new BlockInfo(i, 0, j, BLOCK_TYPE.BASE, 0.0f));
                 }
             }
         }
-
-        //for (int posX = 0; posX < MAX_WORLD_SIZE; ++posX)
-        //{
-        //    for(int posZ = 0; posZ < MAX_WORLD_SIZE; ++posZ)
-        //    {
-        //        int index = posX * MAX_WORLD_SIZE * MAX_WORLD_SIZE + posZ * MAX_WORLD_SIZE;
-        //        Vector3 pos = new Vector3(posX, 0, posZ);
-        //        GameObject empty = Instantiate(emptyColli) as GameObject;
-        //        empty.name = "test";
-        //        empty.transform.position = pos;
-        //        empty.transform.parent = emptyColliders.transform;
-
-        //        //Block testBlock = new Block(BLOCK_TYPE.ATTACHABLE);
-        //        worldBlockInfo[index] = new Block(BLOCK_TYPE.ATTACHABLE);
-        //    }
-        //}
         return;
     }
 
