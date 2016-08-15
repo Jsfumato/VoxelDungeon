@@ -8,22 +8,84 @@ using System.Linq;
 
 using SimpleJSON;
 
+public enum SELECT_RESULT
+{
+    NONE = 0,
+    BLOCK,
+    PLAYERABLE,
+    ENEMY
+}
+
 public class InGameScript : MonoBehaviour {
 
     public GameObject LoadBtn = null;
     public GameObject ButtonPrefab = null;
     public GameObject ListPanel = null;
 
+    public GameObject indicator = null;
+
+    private GameObject playable = null;
+    private GameObject selectedBlock = null;
+    private GameObject enemyCharacter = null;
+
+    public int turn;
+
     private List<BlockInfo> sparseBlockInfo = new List<BlockInfo>();
+    public Camera playerCamera = null;
+
+    private List<GameObject> tmpIndicator = new List<GameObject>();
 
     void Start ()
     {
-        LoadBtn.GetComponent<Button>().onClick.AddListener(LoadJSONData);
+        if (playerCamera == null)
+            playerCamera = Camera.main;
+
+        //LoadBtn.GetComponent<Button>().onClick.AddListener(LoadJSONData);
     }
 	
 	void Update ()
     {
-	
+        if (Input.touchCount != 1)
+            return;
+
+        if (Input.GetTouch(0).phase != TouchPhase.Began)
+            return;
+
+        var result = SelectObject(Input.GetTouch(0).position);
+
+        if (playable != null)
+        {
+            Collider[] colliders;
+            Transform pos = playable.transform;
+            if ((colliders = Physics.OverlapSphere(pos.position, 0.5f)).Length > 1)
+            {
+                foreach(Collider collider in colliders)
+                {
+                    if (collider.gameObject.layer != 10)
+                        continue;
+
+                    Vector3 blockPos = collider.gameObject.transform.position;
+                    Vector3 playablePos = playable.transform.position;
+                    playablePos.y -= 0.5f;
+
+                    if (blockPos == playablePos)
+                        continue;
+
+                    blockPos.y += 0.5f;
+                    GameObject obj = Instantiate(indicator) as GameObject;
+                    obj.transform.position = blockPos;
+                    tmpIndicator.Add(obj);
+                }
+            }
+
+            var targetBlock = SelectObject(Input.GetTouch(0).position);
+            if(targetBlock != SELECT_RESULT.BLOCK)
+                return;
+
+            MovePlayable(selectedBlock.transform.position);
+        }
+
+
 	}
 
     void LoadJSONData()
@@ -72,6 +134,127 @@ public class InGameScript : MonoBehaviour {
                 nodeInfo[4].AsFloat
                 ));
         }
+    }
 
+
+
+
+
+
+
+
+
+
+
+    SELECT_RESULT SelectObject(Vector2 touchPosition)
+    {
+        Ray ray = playerCamera.ScreenPointToRay(new Vector3(touchPosition.x, touchPosition.y, 0));
+
+        List<newRaycastResult> hitList = new List<newRaycastResult>();
+
+        hitList.Clear();
+        RaycastHit[] hits = Physics.RaycastAll(ray);
+        List<RaycastHit> newHits = new List<RaycastHit>();
+        
+        foreach (RaycastHit hit in hits)
+        {
+            hitList.Add(new newRaycastResult(hit));
+        }
+
+        hitList.Sort();
+        newHits.AddRange(hits);
+        
+        if (hitList.Capacity == 0)
+        {
+            playable = null;
+            return SELECT_RESULT.NONE;
+        }
+
+        while(newHits[0].transform.gameObject.layer == 13)
+        {
+            newHits.RemoveAt(0);
+        }
+
+        RaycastHit target = newHits[0];
+
+        // layer 12 is Enemy
+        if (target.transform.gameObject.layer == 12)
+        {
+            enemyCharacter = target.transform.gameObject;
+            return SELECT_RESULT.ENEMY;
+        }
+
+        // layer 11 is Playerable Character
+        if (target.transform.gameObject.layer == 11)
+        {
+            playable = target.transform.gameObject;
+            return SELECT_RESULT.PLAYERABLE;
+        }
+
+        // layer 10 is Block Object;
+        if (target.transform.gameObject.layer == 10)
+        {
+            Vector3 pos = target.transform.position;
+            selectedBlock = target.transform.gameObject;
+            return SELECT_RESULT.BLOCK;
+        }
+
+        playable = null;
+        selectedBlock = null;
+        return SELECT_RESULT.NONE;
+    }
+
+    void MovePlayable(Vector3 Toward)
+    {
+        if (playable == null)
+            return;
+
+        Vector3 target = Toward;
+        target.y += 0.5f;
+
+        Vector3 pos = playable.transform.position;
+
+        if (target.x + target.y + target.z > pos.x + pos.y + pos.z + 1.0f)
+        {
+            selectedBlock = null;
+            return;
+        }
+        if (target.x + target.y + target.z < pos.x + pos.y + pos.z - 1.0f)
+        {
+            selectedBlock = null;
+            return;
+        }
+
+        if (target == playable.transform.position)
+            return;
+
+        playable.transform.position = target;
+        turn++;
+        playable = null;
+        while (tmpIndicator.Count > 0)
+        {
+            Destroy(tmpIndicator[0]);
+            tmpIndicator.RemoveAt(0);
+        }
+    }
+}
+
+
+// RatcastResult redefine
+public class newRaycastResult : System.IComparable<newRaycastResult>
+{
+    public float distance;
+    public Collider collider;
+    public Vector2 textureCoord;
+    public newRaycastResult(RaycastHit hit)
+    {
+        distance = hit.distance;
+        collider = hit.collider;
+        textureCoord = hit.textureCoord;
+    }
+
+    public int CompareTo(newRaycastResult other)
+    {
+        return distance.CompareTo(other.distance);
     }
 }

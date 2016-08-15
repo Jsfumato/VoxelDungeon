@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -12,6 +13,14 @@ public class CameraScript : MonoBehaviour
     }
 
     TOUCH_MODE touchMode = TOUCH_MODE.TAP;
+
+    // virtual pad
+    public Image innerPad = null;
+    public Image outerPad = null;
+
+    private Vector2 padStartPos = Vector2.zero;
+    // end virtual
+
 
     public Camera playerCamera = null;
     float deltaTime = 0.0f;
@@ -159,5 +168,30 @@ public class CameraScript : MonoBehaviour
 
         return 0;
 
+    }
+
+    bool CheckVirtualPad(Vector2 touchPosition)
+    {
+        Ray ray = playerCamera.ScreenPointToRay(new Vector3(touchPosition.x, touchPosition.y, 0));
+
+        List<newRaycastResult> hitList = new List<newRaycastResult>();
+
+        hitList.Clear();
+        RaycastHit[] hits = Physics.RaycastAll(ray);
+
+        foreach (RaycastHit hit in hits)
+            hitList.Add(new newRaycastResult(hit));
+
+        if (hitList.Capacity == 0)
+            return false;
+
+        hitList.Sort();
+
+        Debug.Log(hitList[0].collider.transform.gameObject.layer);
+
+        if (hitList[0].collider.transform.gameObject.layer == 5)
+            return true;
+
+        return false;
     }
 }
