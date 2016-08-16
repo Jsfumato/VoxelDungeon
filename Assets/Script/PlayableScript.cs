@@ -6,18 +6,18 @@ public class PlayableScript : MonoBehaviour {
     public float gravity = -5.0f;
     private float yVelocity = 0.0f;
 
-    private Transform transform = null;
     private CharacterController characterController = null;
     public float moveSpeed = 1.0f;
 
     void Start()
     {
-        transform = GetComponent<Transform>();
         characterController = GetComponent<CharacterController>();
     }
 
 	void Update ()
     {
+        CheckNearCandle();
+
         Vector3 moveDirection = new Vector3();
 
         yVelocity += (gravity * Time.deltaTime);
@@ -34,6 +34,22 @@ public class PlayableScript : MonoBehaviour {
         if(col.gameObject.layer == 12)
         {
             Debug.LogWarning("BOOM!");
+        }
+    }
+
+    void CheckNearCandle()
+    {
+        Collider[] colliders;
+        if ((colliders = Physics.OverlapSphere(transform.position, 1f)).Length > 1)
+        {
+            foreach (var collider in colliders)
+            {
+                var go = collider.gameObject;
+                if (go.layer != 14)
+                    continue;
+
+                go.GetComponent<CandleScript>().SetLightOn();
+            }
         }
     }
 }

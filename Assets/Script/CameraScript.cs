@@ -14,14 +14,6 @@ public class CameraScript : MonoBehaviour
 
     TOUCH_MODE touchMode = TOUCH_MODE.TAP;
 
-    // virtual pad
-    public Image innerPad = null;
-    public Image outerPad = null;
-
-    private Vector2 padStartPos = Vector2.zero;
-    // end virtual
-
-
     public Camera playerCamera = null;
     float deltaTime = 0.0f;
 
