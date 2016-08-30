@@ -8,10 +8,15 @@ public class PlayableScript : MonoBehaviour {
 
     private CharacterController characterController = null;
     public float moveSpeed = 1.0f;
+    private Animator anim;
+
 
     void Start()
     {
         characterController = GetComponent<CharacterController>();
+        anim = GetComponent<Animator>();
+
+        anim.Play("idle");
     }
 
 	void Update ()
@@ -31,10 +36,12 @@ public class PlayableScript : MonoBehaviour {
 
     void OnCollisionEnter(Collision col)
     {
-        if(col.gameObject.layer == 12)
-        {
-            Debug.LogWarning("BOOM!");
-        }
+        Debug.Log("collider enter");
+        if(col.collider.gameObject.layer == 15)
+            col.gameObject.GetComponent<PlateLinkingScript>().SetTriggerOn();
+
+        if (col.collider.gameObject.layer == 16)
+            Debug.Log("Damaged");
     }
 
     void CheckNearCandle()

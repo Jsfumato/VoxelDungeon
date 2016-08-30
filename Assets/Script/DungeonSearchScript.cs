@@ -7,6 +7,12 @@ using System.Collections.Generic;
 
 public class DungeonSearchScript : MonoBehaviour
 {
+    public GameObject NetworkManagerObj = null;
+    private ClientAPI NetworkManager = null;
+
+    public GameObject pDataManagerObj = null;
+    private PlayerDataManager pDataManager = null;
+
     [Range(0, 6)]
     public int MAX_MAPSIZE = 4;
     public Camera mainCam = null;
@@ -16,12 +22,32 @@ public class DungeonSearchScript : MonoBehaviour
     public Button enterDungeonBtn = null;
     public Button closeBtn = null;
     public Image bgPopupImage = null;
+    public Text dNameText = null;
+    public Text dInfoText = null;
 
+    public GameObject dPrefab = null;
     private GameObject selectedTile = null;
+
+    private List<int> dungeonIndex = null;
+
+    bool isInited = false;
 
 	void Start ()
     {
-        InitMapBlock();
+        // init
+        NetworkManagerObj = GameObject.Find("NetworkManager");
+        NetworkManager = NetworkManagerObj.GetComponent<ClientAPI>();
+
+        pDataManagerObj = GameObject.Find("PlayerDataManager");
+        pDataManager = pDataManagerObj.GetComponent<PlayerDataManager>();
+
+        dungeonIndex = new List<int>();
+
+        // do something to Set dTile
+        SetDungeonIndexByRand();
+        GetDungeonList();
+
+        // UI
         enterDungeonBtn.gameObject.SetActive(false);
         closeBtn.gameObject.SetActive(false);
         bgPopupImage.gameObject.SetActive(false);
@@ -30,8 +56,21 @@ public class DungeonSearchScript : MonoBehaviour
         closeBtn.onClick.AddListener(DisSelectMapTile);
     }
 	
+    void GetDungeonList()
+    {
+        var rPkt = PacketInfo.MakeReqGetDungeonListPacket((short)MAX_MAPSIZE);
+        NetworkManager.SendData(rPkt);
+    }
+
 	void Update ()
     {
+        if (pDataManager.GetPlayerState() == SCENE_STATE.SEARCH_SCENE_LOADED 
+            && isInited == false)
+        {
+            InitMapBlock();
+            isInited = true;
+        }
+
         SelectMapTile();
 
         if(selectedTile != null)
@@ -39,12 +78,16 @@ public class DungeonSearchScript : MonoBehaviour
             enterDungeonBtn.gameObject.SetActive(true);
             closeBtn.gameObject.SetActive(true);
             bgPopupImage.gameObject.SetActive(true);
+            dNameText.gameObject.SetActive(true);
+            dInfoText.gameObject.SetActive(true);
         }
         if (selectedTile == null)
         {
             enterDungeonBtn.gameObject.SetActive(false);
             closeBtn.gameObject.SetActive(false);
             bgPopupImage.gameObject.SetActive(false);
+            dNameText.gameObject.SetActive(false);
+            dInfoText.gameObject.SetActive(false);
         }
     }
 
@@ -64,10 +107,15 @@ public class DungeonSearchScript : MonoBehaviour
         if (selected == null)
             return;
 
+        if (selected.GetComponent<MapTileNetworkScript>().isDungeon == false)
+            return;
+
         Debug.Log(selected);
-        //selectedTile = Instantiate(selected) as GameObject;
         selectedTile = Instantiate(MapDataManager.MapDic[selected.GetComponent<TileInfo>().tileID]) as GameObject;
-        //selectedTile.transform.localScale = new Vector3(3.0f, 3.0f, 3.0f);
+
+        //UI
+        dNameText.text = selected.GetComponent<MapTileNetworkScript>().dData.dName;
+        dInfoText.text = selected.GetComponent<MapTileNetworkScript>().dData.dInfo;
 
         Vector3 pos = mainCam.transform.position;
         pos.x -= (3 * (pos.x / pos.y) +1);
@@ -78,24 +126,31 @@ public class DungeonSearchScript : MonoBehaviour
     }
 
     void DisSelectMapTile()
-    {
-        //if (Input.touchCount == 0)
-        //    return;
-
-        //if (Input.touches[0].phase != TouchPhase.Began)
-        //    return;
-
-        //if (selectedTile == null)
-        //    return;
-
-        //GameObject selected = SelectObject(Input.touches[0].position);
-
-        //if (selected == selectedTile)
-        //    return;
-         
+    {         
         Destroy(selectedTile);
         selectedTile = null;
         return;
+    }
+
+    void SetDungeonIndexByRand()
+    {
+        while (dungeonIndex.Count < pDataManager.GetTotalDTileNum())
+        {
+            bool isExist = false;
+
+            int randNum = Random.Range(1, MAX_MAPSIZE * MAX_MAPSIZE);
+            foreach(var num in dungeonIndex)
+            {
+                if (num == randNum)
+                    isExist = true;
+            }
+
+            if (isExist != true)
+            {
+                dungeonIndex.Add(randNum);
+                Debug.Log("Rand : " + randNum);
+            }
+        }
     }
 
     void InitMapBlock()
@@ -106,6 +161,13 @@ public class DungeonSearchScript : MonoBehaviour
 
         mainCam.transform.position = pos;
 
+        List<MapTileData> tData = pDataManager.GetMapTileDataList();
+
+        // defence code
+        if (dungeonIndex.Count < pDataManager.GetTotalDTileNum())
+            SetDungeonIndexByRand();
+
+        int i = 0;
         for (int x = 0; x< MAX_MAPSIZE;++x)
         {
             for (int z = 0; z < MAX_MAPSIZE; ++z)
@@ -113,6 +175,16 @@ public class DungeonSearchScript : MonoBehaviour
                 GameObject mapTile = Instantiate(MapDataManager.MapDic[MAP_ID.PLAIN]) as GameObject;
                 mapTile.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f);
                 mapTile.transform.position = new Vector3(x, 0.0f, z);
+
+                mapTile.AddComponent<MapTileNetworkScript>();
+                mapTile.GetComponent<MapTileNetworkScript>().dungeonPrefab = dPrefab;
+
+                if (dungeonIndex.Contains(MAX_MAPSIZE * x + z))
+                {
+                    Debug.Log("Dungeon Setted");
+                    mapTile.GetComponent<MapTileNetworkScript>().dData = tData[i++];
+                    mapTile.GetComponent<MapTileNetworkScript>().SetDungeon();
+                }
             }
         }
     }

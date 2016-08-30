@@ -6,7 +6,7 @@ public class CandleScript : MonoBehaviour
     public Light candleLight = null;
     public ParticleSystem fireParticleSys = null;
 
-    public bool set = false;
+    public bool alwaysLightOn = false;
     bool curSetting = false;
 
     public float maxTime = 3.0f;
@@ -19,13 +19,19 @@ public class CandleScript : MonoBehaviour
 
 	void Update()
     {
-        Debug.Log(gameObject.name + " : " + curTime);
-        if (curSetting == true)
-            curTime -= Time.deltaTime;
-
-        if (curTime < 0)
+        if (alwaysLightOn == true)
         {
-            SetLightOff();
+            SetLightOn();
+        }
+        else
+        {
+            if (curSetting == true)
+                curTime -= Time.deltaTime;
+
+            if (curTime < 0)
+            {
+                SetLightOff();
+            }
         }
     }
 
@@ -35,7 +41,8 @@ public class CandleScript : MonoBehaviour
         curSetting = true;
 
         candleLight.gameObject.SetActive(true);
-        fireParticleSys.gameObject.SetActive(true);
+        if(fireParticleSys.isPlaying != true)
+            fireParticleSys.Play();
     }
 
     public void SetLightOff()
@@ -44,6 +51,6 @@ public class CandleScript : MonoBehaviour
         curSetting = false;
 
         candleLight.gameObject.SetActive(false);
-        fireParticleSys.gameObject.SetActive(false);
+        fireParticleSys.Stop();
     }
 }

@@ -28,6 +28,9 @@ public class InGameScript : MonoBehaviour {
     private GameObject selectedBlock = null;
     private GameObject enemyCharacter = null;
 
+    public GameObject character = null;
+    public GameObject startPortal = null;
+
     public int turn;
 
     private List<BlockInfo> sparseBlockInfo = new List<BlockInfo>();
@@ -35,12 +38,24 @@ public class InGameScript : MonoBehaviour {
 
     private List<GameObject> tmpIndicator = new List<GameObject>();
 
+    private GameObject pObj = null;
+
+    private Vector3 charToCam;
+
     void Start ()
     {
         if (playerCamera == null)
             playerCamera = Camera.main;
 
         //LoadBtn.GetComponent<Button>().onClick.AddListener(LoadJSONData);
+        pObj = Instantiate(character) as GameObject;
+        pObj.transform.parent = transform;
+
+        charToCam = playerCamera.transform.position - pObj.transform.position;
+
+        Vector3 pos = startPortal.transform.position;
+        pos.y += 2.0f;
+        pObj.transform.position = pos;
     }
 	
 	void Update ()
@@ -141,7 +156,12 @@ public class InGameScript : MonoBehaviour {
 
 
 
-
+    public void MovePlayer(Vector3 dir, float speed)
+    {
+        pObj.transform.rotation = Quaternion.LookRotation(dir);
+        pObj.transform.position += dir * Time.deltaTime;
+        playerCamera.transform.position = pObj.transform.position + charToCam;
+    }
 
 
 
