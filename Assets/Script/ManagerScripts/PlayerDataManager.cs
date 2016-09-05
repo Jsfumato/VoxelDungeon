@@ -12,7 +12,13 @@ public enum CONNECT_STATE : short
 public enum SCENE_STATE : short
 {
     LOGIN_SCENE = 0,
-    MY_SCENE = 1,
+    LOGIN_SCENE_FAILED = 1,
+    // LOGIN_SCENE_SUCCESS = 2,
+
+    CREATE_USER_FAILED = 2,
+    CREATE_USER_SUCCESS = 3,
+
+    MY_SCENE = 4,
 
     EDIT_SCENE = 5,
 

@@ -24,8 +24,13 @@ public class loginManager : MonoBehaviour
     public GameObject conIndicator;
     private Text conStateText;
 
+    public GameObject PopUp;
+    private GameObject InstPopup;
+    public Canvas canvas;
+
 
     const int MAX_BYTE_SIZE = 1024;
+    bool isPopuped = false;
 
     void Start()
     {
@@ -35,8 +40,9 @@ public class loginManager : MonoBehaviour
         pDataManager.SetConnectState(CONNECT_STATE.DISCONNECTED);
         pDataManager.SetPlayerState(SCENE_STATE.LOGIN_SCENE);
 
-        // NetworkManager.InitAndConnect();
-        // StartCoroutine(ConnectCoroutine());
+        InstPopup = Instantiate(PopUp) as GameObject;
+        InstPopup.transform.SetParent(canvas.transform, false);
+        InstPopup.SetActive(false);
 
         LoginButton.onClick.AddListener(UserLogin);
         conStateText = conIndicator.GetComponentInChildren<Text>();
@@ -44,6 +50,29 @@ public class loginManager : MonoBehaviour
 
     void Update()
     {
+        if(pDataManager.GetPlayerState() == SCENE_STATE.LOGIN_SCENE_FAILED
+            && isPopuped == false)
+        {
+            //InstPopup = Instantiate(PopUp) as GameObject;
+            //InstPopup.transform.SetParent(canvas.transform, false);
+            InstPopup.SetActive(true);
+
+            GameObject.Find("BtnNo").GetComponent<Button>().onClick.AddListener(() => { Destroy(InstPopup);});
+            GameObject.Find("BtnYes").GetComponent<Button>().onClick.AddListener(() => {
+
+                string email = emailInput.text;
+                string pw = pwInput.text;
+
+                byte[] packet = PacketInfo.MakeReqRegisterBody(email, pw);
+
+                NetworkManager.SendData(packet);
+                Destroy(InstPopup);
+                //InstPopup.SetActive(false);
+                isPopuped = false;
+            });
+            isPopuped = true;
+        }
+
         if (pDataManager.GetConnectState() == CONNECT_STATE.DISCONNECTED)
             conStateText.text = "Disconnected";
 

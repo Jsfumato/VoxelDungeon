@@ -16,7 +16,9 @@ public class ClientAPI : MonoBehaviour {
     // Variables
     const int MAX_BYTE_SIZE = 1024 * 4;
 
-    public string ipAddress = "127.0.0.1";
+    // public string ipAddress = "192.168.1.19";
+    public string ipAddress = "10.73.39.242";
+    // public string ipAddress = "127.0.0.1";
     public int port = 8777;
 
     private Socket m_Socket;
@@ -194,15 +196,44 @@ public class ClientAPI : MonoBehaviour {
         PACKETID pID = (PACKETID)BitConverter.ToInt16(pHeader.pID, 0);
 
         Debug.LogWarning("header ID : " + BitConverter.ToInt16(pHeader.pID, 0) + " | pID : " + pID);
-
+        Debug.Log(rPkt.buffer[0]);
+        Debug.Log(rPkt.buffer[1]);
         switch (pID)
         {
             case PACKETID.RES_LOGIN:
                 {
                     Debug.Log("RES_LOGIN");
-                    string key = Encoding.Default.GetString(rPkt.buffer, 4, 10);
+                    bool isExist = BitConverter.ToBoolean(rPkt.buffer, 4);
+                    Debug.Log(isExist);
+
+                    if(isExist == false)
+                    {
+                        pDataManager.SetPlayerState(SCENE_STATE.LOGIN_SCENE_FAILED);
+                        break;
+                    }
+
+                    string key = Encoding.Default.GetString(rPkt.buffer, 5, 10);
                     pDataManager.SavePlayerKey(key);
                     pDataManager.SetPlayerState(SCENE_STATE.MY_SCENE);
+                }
+                break;
+
+            case PACKETID.RES_REGISTER_USER:
+                {
+                    Debug.Log("RES_REGISTER");
+                    bool isExist = BitConverter.ToBoolean(rPkt.buffer, 4);
+                    Debug.Log(isExist);
+
+                    if (isExist == false)
+                    {
+                        pDataManager.SetPlayerState(SCENE_STATE.CREATE_USER_FAILED);
+                        break;
+                    }
+
+                    string key = Encoding.Default.GetString(rPkt.buffer, 5, 10);
+                    pDataManager.SavePlayerKey(key);
+                    Debug.Log("uID : " + key);
+                    pDataManager.SetPlayerState(SCENE_STATE.CREATE_USER_SUCCESS);
                 }
                 break;
 

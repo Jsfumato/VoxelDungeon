@@ -39,14 +39,46 @@ class PacketInfo
         var pwLength = Encoding.Default.GetByteCount(pw);
         var pwByte = Encoding.Default.GetBytes(pw);
 
-        PacketHeader pHeader = MakePacketHeader(PACKETID.REQ_LOGIN, 40 + pwLength);
+        PacketHeader pHeader = MakePacketHeader(PACKETID.REQ_LOGIN, emailLength + pwLength + 4);
 
-        byte[] ret = new byte[PACKET_HEADER_SIZE + 40 + pwLength];
+        byte[] ret = new byte[PACKET_HEADER_SIZE + emailLength + pwLength + 4];
         Buffer.BlockCopy(pHeader.pID, 0, ret, 0, 2);
         Buffer.BlockCopy(pHeader.bodySize, 0, ret, 2, 2);
 
-        Buffer.BlockCopy(emailByte, 0, ret, PACKET_HEADER_SIZE, Mathf.Min(emailLength, 40));
-        Buffer.BlockCopy(pwByte, 0, ret, PACKET_HEADER_SIZE + 40, pwLength);
+        var emailLengthByte = BitConverter.GetBytes(emailLength);
+        var pwLengthByte = BitConverter.GetBytes(pwLength);
+
+        Buffer.BlockCopy(emailLengthByte, 0, ret, 4, 2);
+        Buffer.BlockCopy(pwLengthByte, 0, ret, 6, 2);
+
+        Buffer.BlockCopy(emailByte, 0, ret, PACKET_HEADER_SIZE + 4, emailLength);
+        Buffer.BlockCopy(pwByte, 0, ret, PACKET_HEADER_SIZE + 4 + emailLength, pwLength);
+
+        return ret;
+    }
+
+    public static byte[] MakeReqRegisterBody(string Email, string pw)
+    {
+        var emailLength = Encoding.Default.GetByteCount(Email);
+        var emailByte = Encoding.Default.GetBytes(Email);
+
+        var pwLength = Encoding.Default.GetByteCount(pw);
+        var pwByte = Encoding.Default.GetBytes(pw);
+
+        PacketHeader pHeader = MakePacketHeader(PACKETID.REQ_REGISTER_USER, emailLength + pwLength + 4);
+
+        byte[] ret = new byte[PACKET_HEADER_SIZE + emailLength + pwLength + 4];
+        Buffer.BlockCopy(pHeader.pID, 0, ret, 0, 2);
+        Buffer.BlockCopy(pHeader.bodySize, 0, ret, 2, 2);
+
+        var emailLengthByte = BitConverter.GetBytes(emailLength);
+        var pwLengthByte = BitConverter.GetBytes(pwLength);
+
+        Buffer.BlockCopy(emailLengthByte, 0, ret, 4, 2);
+        Buffer.BlockCopy(pwLengthByte, 0, ret, 6, 2);
+
+        Buffer.BlockCopy(emailByte, 0, ret, PACKET_HEADER_SIZE + 4, emailLength);
+        Buffer.BlockCopy(pwByte, 0, ret, PACKET_HEADER_SIZE + 4 + emailLength, pwLength);
 
         return ret;
     }
@@ -73,7 +105,6 @@ class PacketInfo
 
         return ret;
     }
-
 
     public static byte[] MakeReqSaveMapNameInfoBody(string uID, string dName, string dInfo, short totalRoomNum)
     {
@@ -153,11 +184,16 @@ class PacketInfo
 
 public enum PACKETID : short
 {
+    NONE = -1,
+
     REQ_PING = 0,
     RES_PING = 1,
 
     REQ_LOGIN = 2,
     RES_LOGIN = 3,
+
+    REQ_REGISTER_USER = 4,
+    RES_REGISTER_USER = 5,
 
     REQ_GET_MAPDATA = 10,
     RES_GET_MAPDATA = 11,
